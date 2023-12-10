@@ -37,21 +37,11 @@ resource aws_internet_gateway main {
 }
 
 
-resource aws_default_route_table main {
-	default_route_table_id = aws_vpc.main.default_route_table_id
-	
-	route {
-		cidr_block = "0.0.0.0/0"
-		gateway_id = aws_internet_gateway.main.id
-	}
-	
-	route {
-		ipv6_cidr_block = "::/0"
-		gateway_id = aws_internet_gateway.main.id
-	}
+resource aws_egress_only_internet_gateway main {
+	vpc_id = aws_vpc.main.id
 	
 	tags = {
-		Name = "${var.name} Route Table"
+		Name = "${var.name} Egress-Only Internet Gateway"
 	}
 }
 
@@ -64,28 +54,46 @@ data aws_availability_zones main {}
 
 
 locals {
-	availability_zone_letters = [
-		for zone in data.aws_availability_zones.main.names :
-		upper( trimprefix( zone, data.aws_availability_zones.main.id ) )
-	]
+	az_letters = {
+		for zone in data.aws_availability_zones.main.names:
+		zone => upper( trimprefix( zone, data.aws_availability_zones.main.id ) )
+	}
+	
+	subnet_group_list = [ for identifier, subnet in var.subnets: merge( subnet, { identifier = identifier } ) ]
+	
+	flattened_subnets = flatten( [
+		for group_index, subnet in local.subnet_group_list:
+		[
+			for zone_index, zone_name in data.aws_availability_zones.main.names:
+			{
+				identifier = subnet.identifier
+				name = "${var.name} ${subnet.name} Subnet ${local.az_letters[zone_name]}"
+				availability_zone = zone_name
+				cidr_block = cidrsubnet( cidrsubnet( aws_vpc.main.cidr_block, 2, zone_index ), 6, group_index )
+				ipv6_cidr_block = cidrsubnet( cidrsubnet( aws_vpc.main.ipv6_cidr_block, 2, zone_index ), 6, group_index )
+				public = subnet.public
+			}
+			# if subnet.availability_zone == null || endswith( zone, subnet.availability_zone )
+		]
+	] )
 }
 
 
 resource aws_subnet main {
-	count = length( data.aws_availability_zones.main.names )
+	for_each = { for index, subnet in local.flattened_subnets: index => subnet }
 	
 	vpc_id = aws_vpc.main.id
-	availability_zone = data.aws_availability_zones.main.names[count.index]
-	cidr_block = cidrsubnet( aws_vpc.main.cidr_block, 8, count.index )
-	ipv6_cidr_block = cidrsubnet( aws_vpc.main.ipv6_cidr_block, 8, count.index )
-	map_public_ip_on_launch = true
+	availability_zone = each.value.availability_zone
+	cidr_block = each.value.cidr_block
+	ipv6_cidr_block = each.value.ipv6_cidr_block
+	map_public_ip_on_launch = each.value.public
 	assign_ipv6_address_on_creation = true
 	
 	# Block instance creation before DHCP options is ready.
 	depends_on = [ aws_vpc_dhcp_options_association.main ]
 	
 	tags = {
-		Name = "${var.name} Subnet ${local.availability_zone_letters[count.index]}"
+		Name = each.value.name
 	}
 }
 
@@ -96,7 +104,7 @@ resource aws_subnet main {
 #-------------------------------------------------------------------------------
 resource aws_default_network_acl main {
 	default_network_acl_id = aws_vpc.main.default_network_acl_id
-	subnet_ids = aws_subnet.main[*].id
+	subnet_ids = [ for index, subnet in aws_subnet.main: subnet.id ]
 	
 	ingress {
 		rule_no = 100

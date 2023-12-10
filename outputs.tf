@@ -4,6 +4,9 @@ output id {
 }
 
 output subnets {
-	description = "VPC subnets."
-	value = aws_subnet.main[*]
+	description = "Map of named subnet groups in different availability zones."
+	value = {
+		for index, subnet in aws_subnet.main:
+		local.flattened_subnets[index].identifier => subnet...
+	}
 }
