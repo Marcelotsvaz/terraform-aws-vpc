@@ -1,0 +1,8 @@
+include:
+  - component: gitlab.com/marcelotsvaz/gitlab/sane-workflow@1.0.0
+  - component: gitlab.com/marcelotsvaz/gitlab/stages@1.0.0
+  - component: gitlab.com/marcelotsvaz/gitlab/terraform-registry@1.0.0
+    inputs:
+        provider: aws
+        name: vpc
+  - component: gitlab.com/marcelotsvaz/gitlab/release@1.0.0
