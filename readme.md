@@ -1,1 +1,1 @@
-# VPC Module for Terraform
+# AWS VPC Terraform Module
