@@ -15,23 +15,29 @@ variable cidr_block {
 	default = "10.0.0.0/16"
 }
 
-variable subnets {
-	description = "Map of named subnet group definitions. Each definition will create one subnet per availability zone."
+variable availability_zone_filter {
+	description = "List of allowed availability zones in the form of lowercase letters. Defaults to all zones."
+	type = list( string )
+	default = []
+	
+	validation {
+		condition = alltrue( [ for zone in var.availability_zone_filter: regexall( "^[a-z]$", zone ) ] )
+		error_message = "value"
+	}
+}
+
+variable networks {
+	description = "Mapping of subnets, mirrored across multiple availability zones. Use `%s` in the name to substitute the zone letter."
 	
 	type = map( object( {
 		name = string
-		availability_zone = optional( string, "all" )
 		public = optional( bool, false )
 	} ) )
 	
 	default = {
 		public = {
-			name = "Public"
+			name = "%s - Public"
 			public = true
-		}
-		
-		private = {
-			name = "Private"
 		}
 	}
 }

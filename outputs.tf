@@ -3,10 +3,10 @@ output id {
 	value = aws_vpc.main.id
 }
 
-output subnets {
-	description = "Map of named subnet groups in different availability zones."
+output networks {
+	description = "Mapping of subnets, mirrored across multiple availability zones."
 	value = {
-		for index, subnet in aws_subnet.main:
-		local.flattened_subnets[index].identifier => subnet...
+		for key, subnet in aws_subnet.main:
+		local.subnets[key].network => subnet...
 	}
 }

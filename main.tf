@@ -54,33 +54,41 @@ data aws_availability_zones main {}
 
 
 locals {
-	az_letters = {
-		for zone in data.aws_availability_zones.main.names:
-		zone => upper( trimprefix( zone, data.aws_availability_zones.main.id ) )
+	availability_zones = [
+		for zone_name in data.aws_availability_zones.main.names:
+		zone_name
+		if length( var.availability_zone_filter ) == 0
+		|| contains( var.availability_zone_filter, trimprefix( zone_name, data.aws_availability_zones.main.id ) )
+	]
+	
+	subnets = {
+		for pair in setproduct( local.availability_zones, keys( var.networks ) ):
+		"${pair[0]}-${pair[1]}" => {
+			availability_zone = pair[0]
+			network = pair[1]
+			name = format(
+				"${var.name} Subnet - ${var.networks[pair[1]].name}",
+				upper( trimprefix( pair[0], data.aws_availability_zones.main.id ) ),
+			)
+			public = var.networks[pair[1]].public
+			
+			cidr_block = cidrsubnet(
+				cidrsubnet( aws_vpc.main.cidr_block, 4, index( local.availability_zones, pair[0] ) ),
+				4,
+				index( keys( var.networks ), pair[1] ),
+			)
+			ipv6_cidr_block = cidrsubnet(
+				cidrsubnet( aws_vpc.main.ipv6_cidr_block, 4, index( local.availability_zones, pair[0] ) ),
+				4,
+				index( keys( var.networks ), pair[1] ),
+			)
+		}
 	}
-	
-	subnet_group_list = [ for identifier, subnet in var.subnets: merge( subnet, { identifier = identifier } ) ]
-	
-	flattened_subnets = flatten( [
-		for group_index, subnet in local.subnet_group_list:
-		[
-			for zone_index, zone_name in data.aws_availability_zones.main.names:
-			{
-				identifier = subnet.identifier
-				name = "${var.name} ${subnet.name} Subnet ${local.az_letters[zone_name]}"
-				availability_zone = zone_name
-				cidr_block = cidrsubnet( cidrsubnet( aws_vpc.main.cidr_block, 2, zone_index ), 6, group_index )
-				ipv6_cidr_block = cidrsubnet( cidrsubnet( aws_vpc.main.ipv6_cidr_block, 2, zone_index ), 6, group_index )
-				public = subnet.public
-			}
-			# TODO: if subnet.availability_zone == null || endswith( zone, subnet.availability_zone )
-		]
-	] )
 }
 
 
 resource aws_subnet main {
-	for_each = { for index, subnet in local.flattened_subnets: index => subnet }
+	for_each = local.subnets
 	
 	vpc_id = aws_vpc.main.id
 	availability_zone = each.value.availability_zone

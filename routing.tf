@@ -22,8 +22,8 @@ resource aws_default_route_table public {
 
 resource aws_route_table_association public {
 	for_each = {
-		for index, subnet in local.flattened_subnets:
-		index => aws_subnet.main[index]
+		for key, subnet in local.subnets:
+		key => aws_subnet.main[key]
 		if subnet.public
 	}
 	
@@ -52,8 +52,8 @@ resource aws_route_table private {
 
 resource aws_route_table_association private {
 	for_each = {
-		for index, subnet in local.flattened_subnets:
-		index => aws_subnet.main[index]
+		for key, subnet in local.subnets:
+		key => aws_subnet.main[key]
 		if !subnet.public
 	}
 	
