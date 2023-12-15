@@ -73,7 +73,7 @@ locals {
 				ipv6_cidr_block = cidrsubnet( cidrsubnet( aws_vpc.main.ipv6_cidr_block, 2, zone_index ), 6, group_index )
 				public = subnet.public
 			}
-			# if subnet.availability_zone == null || endswith( zone, subnet.availability_zone )
+			# TODO: if subnet.availability_zone == null || endswith( zone, subnet.availability_zone )
 		]
 	] )
 }

@@ -22,13 +22,13 @@ resource aws_default_route_table public {
 
 resource aws_route_table_association public {
 	for_each = {
-		for index, subnet in aws_subnet.main:
-		subnet.id => subnet
-		if local.flattened_subnets[index].public
+		for index, subnet in local.flattened_subnets:
+		index => aws_subnet.main[index]
+		if subnet.public
 	}
 	
 	route_table_id = aws_default_route_table.public.id
-	subnet_id = each.key
+	subnet_id = each.value.id
 }
 
 
@@ -52,11 +52,11 @@ resource aws_route_table private {
 
 resource aws_route_table_association private {
 	for_each = {
-		for index, subnet in aws_subnet.main:
-		subnet.id => subnet
-		if !local.flattened_subnets[index].public
+		for index, subnet in local.flattened_subnets:
+		index => aws_subnet.main[index]
+		if !subnet.public
 	}
 	
 	route_table_id = aws_route_table.private.id
-	subnet_id = each.key
+	subnet_id = each.value.id
 }
