@@ -154,3 +154,21 @@ resource aws_default_network_acl main {
 		Name = "${var.name} ACL"
 	}
 }
+
+
+resource aws_default_security_group main {
+	vpc_id = aws_vpc.main.id
+	
+	egress {
+		description = "All traffic"
+		protocol = "all"
+		from_port = 0
+		to_port = 0
+		cidr_blocks = [ "0.0.0.0/0" ]
+		ipv6_cidr_blocks = [ "::/0" ]
+	}
+	
+	tags = {
+		Name = "${var.name} Default Security Group"
+	}
+}
