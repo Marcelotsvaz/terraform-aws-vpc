@@ -160,7 +160,7 @@ resource aws_default_security_group main {
 	vpc_id = aws_vpc.main.id
 	
 	egress {
-		description = "All traffic"
+		description = "All egress traffic."
 		protocol = "all"
 		from_port = 0
 		to_port = 0

@@ -15,6 +15,12 @@ variable cidr_block {
 	default = "10.0.0.0/16"
 }
 
+variable nat_network_interface_id {
+	description = "ID of a network interface responsible for NAT."
+	type = string
+	default = null
+}
+
 variable availability_zone_filter {
 	description = "List of allowed availability zones in the form of lowercase letters. Defaults to all zones."
 	type = list( string )

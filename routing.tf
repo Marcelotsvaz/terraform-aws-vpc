@@ -44,6 +44,15 @@ resource aws_route_table private {
 		egress_only_gateway_id = aws_egress_only_internet_gateway.main.id
 	}
 	
+	dynamic route {
+		for_each = var.nat_network_interface_id != null ? [ 1 ] : []
+		
+		content {
+			cidr_block = "0.0.0.0/0"
+			network_interface_id = var.nat_network_interface_id
+		}
+	}
+	
 	tags = {
 		Name = "${var.name} Private Route Table"
 	}

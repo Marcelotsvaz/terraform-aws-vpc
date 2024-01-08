@@ -10,3 +10,8 @@ output networks {
 		local.subnets[key].network => subnet...
 	}
 }
+
+output default_security_group_id {
+	description = "Default Security Group ID."
+	value = aws_default_security_group.main.id
+}
