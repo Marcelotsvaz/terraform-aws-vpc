@@ -27,8 +27,8 @@ variable availability_zone_filter {
 	default = []
 	
 	validation {
-		condition = alltrue( [ for zone in var.availability_zone_filter: regexall( "^[a-z]$", zone ) ] )
-		error_message = "value"
+		condition = alltrue( [ for zone in var.availability_zone_filter: length( regexall( "^[a-z]$", zone ) ) > 0 ] )
+		error_message = "Invalid availability zone."
 	}
 }
 
