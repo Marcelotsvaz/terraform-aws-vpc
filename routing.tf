@@ -45,7 +45,7 @@ resource aws_route_table private {
 	}
 	
 	dynamic route {
-		for_each = var.nat_network_interface_id != null ? [ 1 ] : []
+		for_each = var.nat_network_interface_id != null ? [ true ] : []
 		
 		content {
 			cidr_block = "0.0.0.0/0"
